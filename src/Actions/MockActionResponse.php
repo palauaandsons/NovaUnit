@@ -2,9 +2,12 @@
 
 namespace JoshGaber\NovaUnit\Actions;
 
+use Illuminate\Testing\Constraints\ArraySubset;
 use JoshGaber\NovaUnit\Constraints\IsActionResponseType;
 use Laravel\Nova\Actions\ActionResponse;
+use Laravel\Nova\Actions\Responses\Visit;
 use PHPUnit\Framework\Assert as PHPUnit;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Constraint\IsInstanceOf;
 use PHPUnit\Framework\Constraint\IsType;
 
@@ -43,7 +46,7 @@ class MockActionResponse
     /**
      * Asserts the handle response is of type "message".
      *
-     * @param  string  $message
+     * @param string $message
      * @return $this
      */
     public function assertMessage(string $message = ''): self
@@ -65,7 +68,7 @@ class MockActionResponse
     /**
      * Asserts the handle response is of type "deleted".
      *
-     * @param  string  $message
+     * @param string $message
      * @return $this
      */
     public function assertDeleted(string $message = ''): self
@@ -98,7 +101,7 @@ class MockActionResponse
     /**
      * Asserts the handle response is of type "visit".
      *
-     * @param string|null $path
+     * @param string $path
      * @param array $options
      * @return $this
      */
@@ -108,24 +111,43 @@ class MockActionResponse
             return $this->assertResponseType('visit');
         }
 
-        return $this->assertResponseContainsArray(['path' => $path, 'options' => array_values($options)], 'visit');
+        PHPUnit::assertArrayHasKey('visit', $this->response);
+
+        $visit = $this->response['visit'];
+
+        PHPUnit::logicalAnd(
+            PHPUnit::assertNotEmpty($visit),
+            PHPUnit::assertInstanceOf(Visit::class, $visit),
+            PHPUnit::assertEquals($options, $visit->options),
+            PHPUnit::assertEquals($path, $visit->path),
+        );
+
+        return $this;
     }
 
     /**
      * Asserts the handle response is of type "openInNewTab".
      *
-     * @param  string  $message
+     * @param string $message
      * @return $this
      */
     public function assertOpenInNewTab(string $message = ''): self
     {
-        return $this->assertResponseType('openInNewTab', $message);
+        return $this->assertResponseContainsArray(['openInNewTab' => true], 'redirect', $message);
+    }
+
+    /**
+     * Asserts the handle response of type "openInNewTab" directs to the specified path.
+     */
+    public function assertOpenInNewTabToPath(string $path, string $message = ''): self
+    {
+        return $this->assertResponseContainsArray(['url' => $path, 'openInNewTab' => true], 'redirect', $message);
     }
 
     /**
      * Asserts the handle response is of type "download".
      *
-     * @param  string  $message
+     * @param string $message
      * @return $this
      */
     public function assertDownload(string $message = ''): self
@@ -133,10 +155,10 @@ class MockActionResponse
         return $this->assertResponseType('download', $message);
     }
 
-    private function assertResponseContains(string $contents, string $type, string $message = ''): self
+    private function assertResponseKeyContains(string $contents, string $type, string $key, string $message = ''): self
     {
         PHPUnit::assertThat(
-            $this->response[$type] ?? '',
+            $this->response[$type]?->{$key} ?? '',
             PHPUnit::logicalAnd(
                 PHPUnit::logicalNot(PHPUnit::isEmpty()),
                 PHPUnit::stringContains($contents, true)
@@ -150,10 +172,10 @@ class MockActionResponse
     private function assertResponseContainsArray(array $contents, string $type, string $message = ''): self
     {
         PHPUnit::assertThat(
-            $this->response[$type] ?? '',
+            $this->response[$type]?->jsonSerialize() ?? throw new AssertionFailedError(),
             PHPUnit::logicalAnd(
                 PHPUnit::logicalNot(PHPUnit::isEmpty()),
-                PHPUnit::equalTo($contents)
+                new ArraySubset($contents, false)
             ),
             $message
         );
@@ -164,25 +186,25 @@ class MockActionResponse
     /**
      * Asserts the handle response is a "message" and contains the given text.
      *
-     * @param  string  $contents  The text to assert is in the response
-     * @param  string  $message
+     * @param string $contents The text to assert is in the response
+     * @param string $message
      * @return $this
      */
     public function assertMessageContains(string $contents, string $message = ''): self
     {
-        return $this->assertResponseContains($contents, 'message', $message);
+        return $this->assertResponseKeyContains($contents, 'message', 'text', $message);
     }
 
     /**
      * Asserts the handle response is a "danger" and contains the given text.
      *
-     * @param  string  $contents  The text to assert is in the response
-     * @param  string  $message
+     * @param string $contents The text to assert is in the response
+     * @param string $message
      * @return $this
      */
     public function assertDangerContains(string $contents, string $message = ''): self
     {
-        return $this->assertResponseContains($contents, 'danger', $message);
+        return $this->assertResponseKeyContains($contents, 'danger', 'text', $message);
     }
 
     /**

@@ -113,6 +113,26 @@ class MockActionResponseTest extends TestCase
         $mockActionResponse->assertOpenInNewTab();
     }
 
+    public function testItSucceedsOnOpenInNewTabResponseWithPath()
+    {
+        $mockActionResponse = new MockActionResponse(Action::openInNewTab('/test/path'));
+        $mockActionResponse->assertOpenInNewTabToPath('/test/path');
+    }
+
+    public function testItFailsOnOpenInNewTabResponseWithPathIncorrect()
+    {
+        $this->shouldFail();
+        $mockActionResponse = new MockActionResponse(Action::openInNewTab('/test/path'));
+        $mockActionResponse->assertOpenInNewTabToPath('/test/wrongpath');
+    }
+
+    public function testItFailsOnOpenInNewTabResponseWithWrongAction()
+    {
+        $this->shouldFail();
+        $mockActionResponse = new MockActionResponse(Action::visit('/test/path'));
+        $mockActionResponse->assertOpenInNewTabToPath('/test/wrongpath');
+    }
+
     public function testItFailsOnResponseOtherThanOpenInNewTab()
     {
         $this->shouldFail();
