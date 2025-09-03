@@ -2,13 +2,12 @@
 
 namespace JoshGaber\NovaUnit\Lenses;
 
-use Illuminate\Contracts\Database\Eloquent\Builder;
 use Laravel\Nova\Http\Requests\LensRequest;
 
 class MockLensRequest extends LensRequest
 {
-    public bool $withFilters;
-    public bool $withOrdering;
+    public $withFilters;
+    public $withOrdering;
 
     public function __construct(array $query = [], array $request = [], array $attributes = [], array $cookies = [], array $files = [], array $server = [], $content = null)
     {
@@ -18,14 +17,14 @@ class MockLensRequest extends LensRequest
         $this->withOrdering = false;
     }
 
-    public function withFilters(Builder $query): Builder
+    public function withFilters($query)
     {
         $this->withFilters = true;
 
         return $query;
     }
 
-    public function withOrdering(Builder $query, $defaultCallback = null): Builder
+    public function withOrdering($query, $defaultCallback = null)
     {
         $this->withOrdering = true;
 
